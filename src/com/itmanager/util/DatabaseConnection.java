@@ -9,7 +9,7 @@ public class DatabaseConnection {
     // Database credentials
     private static final String URL = "jdbc:mysql://localhost:3306/it_asset_db";
     private static final String USER = "admin"; 
-    private static final String PASSWORD = "ACTUAL_MYSQL_PASSWORD"; // REPLACE WITH ACTUAL password not placeholder
+    private static final String PASSWORD = "YOUR_MYSQL_PASSWORD"; // REPLACE WITH ACTUAL password not placeholder
 
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASSWORD);

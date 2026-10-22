@@ -17,6 +17,25 @@ public class MainFrame extends javax.swing.JFrame {
      */
     public MainFrame() {
         initComponents();
+        loadAssetData(); // Calls the data load when the app starts
+    }
+
+    // Method moved OUTSIDE the constructor
+    private void loadAssetData() {
+        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) assetTable.getModel();
+        model.setRowCount(0); // Clear old data
+        
+        com.itmanager.dao.AssetDAO dao = new com.itmanager.dao.AssetDAO();
+        java.util.List<com.itmanager.model.Asset> assets = dao.getAllAssets();
+        
+        for (com.itmanager.model.Asset asset : assets) {
+            model.addRow(new Object[]{
+                asset.getAssetTag(), 
+                asset.getDeviceType(), 
+                asset.getModelName(), 
+                asset.getStatus()
+            });
+        }
     }
 
     /**
@@ -100,7 +119,9 @@ public class MainFrame extends javax.swing.JFrame {
             com.itmanager.dao.AssetDAO dao = new com.itmanager.dao.AssetDAO();
             dao.addAsset(newAsset);
 
-            javax.swing.JOptionPane.showMessageDialog(this, "Asset saved to MySQL Database!");    
+            javax.swing.JOptionPane.showMessageDialog(this, "Asset saved to MySQL Database!");
+            
+            loadAssetData(); // Refreshes the table immediately^
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(this, "Error saving asset: " + e.getMessage());
         }
