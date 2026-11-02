@@ -17,7 +17,62 @@ public class MainFrame extends javax.swing.JFrame {
      */
     public MainFrame() {
         initComponents();
+        
+        // Create the dropdown options
+        javax.swing.JComboBox<String> statusDropdown = new javax.swing.JComboBox<>(new String[]{
+            "Available", "In Use", "Maintenance", "Retired"
+        });
+
+        // Apply it to the 4th column (Index 3 is the Status column)
+        assetTable.getColumnModel().getColumn(3).setCellEditor(new javax.swing.DefaultCellEditor(statusDropdown));
+
+        // Set the main window background to pure white
+        getContentPane().setBackground(java.awt.Color.WHITE);
+
+        // Fix the header contrast (Black text, bold font)
+        assetTable.getTableHeader().setForeground(java.awt.Color.BLACK);
+        assetTable.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+
+        // Force the empty table space to be white instead of the default grey
+        jScrollPane1.getViewport().setBackground(java.awt.Color.WHITE);
+        
+        // Add hover effect to the Delete button
+        btnDelete.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btnDelete.setBackground(new java.awt.Color(220, 53, 69)); // Professional Red
+                btnDelete.setForeground(java.awt.Color.WHITE); // White text for contrast
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                // Revert to default colors when the mouse leaves
+                btnDelete.setBackground(javax.swing.UIManager.getColor("control")); 
+                btnDelete.setForeground(java.awt.Color.BLACK);
+            }
+        });
+        
+        
         loadAssetData(); // Calls the data load when the app starts
+        
+        // Listen for manual cell edits in the table
+        assetTable.getModel().addTableModelListener(new javax.swing.event.TableModelListener() {
+            @Override
+            public void tableChanged(javax.swing.event.TableModelEvent e) {
+                // Only trigger if an existing cell was updated, and it was the Status column (Index 3)
+                if (e.getType() == javax.swing.event.TableModelEvent.UPDATE && e.getColumn() == 3) {
+                    int row = e.getFirstRow();
+
+                    // Extract the Primary Key (Asset Tag) and the new Status
+                    String assetTag = assetTable.getModel().getValueAt(row, 0).toString();
+                    String newStatus = assetTable.getModel().getValueAt(row, 3).toString();
+
+                    // Send the change to MySQL
+                    com.itmanager.dao.AssetDAO dao = new com.itmanager.dao.AssetDAO();
+                    dao.updateAssetStatus(assetTag, newStatus);
+                }
+            }
+        });
     }
 
     // Method moved OUTSIDE the constructor
@@ -51,9 +106,12 @@ public class MainFrame extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         assetTable = new javax.swing.JTable();
         addAssetBtn = new javax.swing.JButton();
+        btnDelete = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
+        jLabel1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel1.setText("IT Asset & Hardware Tracker");
 
         assetTable.setModel(new javax.swing.table.DefaultTableModel(
@@ -72,21 +130,28 @@ public class MainFrame extends javax.swing.JFrame {
         addAssetBtn.setText("Add New Asset");
         addAssetBtn.addActionListener(this::addAssetBtnActionPerformed);
 
+        btnDelete.setText("Delete Asset");
+        btnDelete.addActionListener(this::btnDeleteActionPerformed);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(addAssetBtn)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                            .addGap(154, 154, 154)
-                            .addComponent(jLabel1))
-                        .addGroup(layout.createSequentialGroup()
-                            .addGap(43, 43, 43)
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 375, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addContainerGap(68, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(addAssetBtn)
+                        .addGap(18, 18, 18)
+                        .addComponent(btnDelete))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(0, 45, Short.MAX_VALUE)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 571, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(51, Short.MAX_VALUE))
+            .addGroup(layout.createSequentialGroup()
+                .addGap(228, 228, 228)
+                .addComponent(jLabel1)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -96,8 +161,10 @@ public class MainFrame extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(addAssetBtn)
-                .addContainerGap(18, Short.MAX_VALUE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(addAssetBtn)
+                    .addComponent(btnDelete))
+                .addContainerGap(24, Short.MAX_VALUE))
         );
 
         pack();
@@ -127,6 +194,42 @@ public class MainFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_addAssetBtnActionPerformed
 
+    private void btnDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeleteActionPerformed
+        // TODO add your handling code here:
+        // 1. Get the selected row from table
+        int selectedRow = assetTable.getSelectedRow(); 
+
+        // 2. Prevent errors if nothing is selected
+        if (selectedRow == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Please select an asset to delete.", "Selection Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // 3. Extract the Asset Tag (Column 0) as string not ID (integer)
+        String assetTag = assetTable.getValueAt(selectedRow, 0).toString();
+
+        // 4. Ask for confirmation
+        int confirm = javax.swing.JOptionPane.showConfirmDialog(this, "Permanently delete Asset Tag: " + assetTag + "?", "Confirm Delete", javax.swing.JOptionPane.YES_NO_OPTION);
+
+        if (confirm == javax.swing.JOptionPane.YES_OPTION) {
+            try {
+                // 5. Call the DB method via your DAO
+                com.itmanager.dao.AssetDAO dao = new com.itmanager.dao.AssetDAO();
+                boolean success = dao.deleteAsset(assetTag);
+                
+                if (success) {
+                    javax.swing.JOptionPane.showMessageDialog(this, "Asset deleted successfully.");
+                    // 6. Refresh the table UI
+                    loadAssetData(); 
+                } else {
+                    javax.swing.JOptionPane.showMessageDialog(this, "Database Error: Could not delete.", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception e) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Error deleting asset: " + e.getMessage());
+            }
+        }
+    }//GEN-LAST:event_btnDeleteActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -155,6 +258,7 @@ public class MainFrame extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton addAssetBtn;
     private javax.swing.JTable assetTable;
+    private javax.swing.JButton btnDelete;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
     // End of variables declaration//GEN-END:variables

@@ -51,4 +51,36 @@ public class AssetDAO {
         }
         return assets;
     }
+
+    // delete method
+    public boolean deleteAsset(String assetTag) {
+        String sql = "DELETE FROM assets WHERE asset_tag = ?"; 
+        
+        try (Connection conn = DatabaseConnection.getConnection(); 
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, assetTag);
+            return pstmt.executeUpdate() > 0;
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    // update assert status
+    public boolean updateAssetStatus(String assetTag, String newStatus) {
+        String sql = "UPDATE assets SET status = ? WHERE asset_tag = ?";
+        try (java.sql.Connection conn = com.itmanager.util.DatabaseConnection.getConnection(); 
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, newStatus);
+            pstmt.setString(2, assetTag);
+            return pstmt.executeUpdate() > 0;
+            
+        } catch (java.sql.SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
